@@ -101,6 +101,10 @@ button {
   font-family: "Roboto", sans-serif;
   color: white;
   position: absolute;
+  padding: 15px;
+  left: 0;
+  bottom: 0;
+}
 
 
 

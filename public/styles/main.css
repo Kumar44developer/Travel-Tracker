@@ -44,7 +44,14 @@ body {
   max-height: 100%;
   margin-left: 1rem;
 }
-
+.ag-canvas_svg path {
+  fill: #383d46;
+  fill-opacity: 1;
+  stroke: #21252b;
+  stroke-opacity: 1;
+  stroke-width: 0.5;
+  transition: 0.5s;
+}
 
 
 

@@ -40,7 +40,8 @@ function isMissingRelationError(err) {
 app.set("view engine", "ejs");
 app.set("views", join(__dirname, "views"));
 
-
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static(join(__dirname, "public")));
 
 
 

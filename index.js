@@ -65,7 +65,15 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", service: "travel-tracker" });
 });
 
-
+app.get("/", async (_req, res, next) => {
+  try {
+    const countries = await getVisitedCountryCodes();
+    renderHome(res, { countries });
+  } catch (err) {
+    if (isConnectionError(err)) {
+      console.error("Database unreachable:", err.message);
+      return renderHome(res, { countries: [], dbOffline: true });
+    }
 
 
 

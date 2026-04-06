@@ -43,7 +43,12 @@ app.set("views", join(__dirname, "views"));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(join(__dirname, "public")));
 
-
+async function getVisitedCountryCodes() {
+  const result = await pool.query(
+    "SELECT country_code FROM visited_countries ORDER BY country_code"
+  );
+  return result.rows.map((row) => row.country_code);
+}
 
 
 

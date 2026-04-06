@@ -51,6 +51,15 @@ async function getVisitedCountryCodes() {
 }
 
 
+function renderHome(res, { countries, formError, inputError, dbOffline } = {}) {
+  res.status(200).render("index", {
+    countries,
+    total: countries.length,
+    formError: formError ?? null,
+    inputError: !!inputError,
+    dbOffline: !!dbOffline,
+  });
+}
 
 
 

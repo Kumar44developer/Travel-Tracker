@@ -1,1 +1,6 @@
-
+{
+  "name": "8.3-travel-tracker",
+  "version": "1.0.0",
+  "description": "Interactive world map to track countries you have visited (PostgreSQL + Express).",
+  "main": "index.js",
+  "type": "module",

@@ -74,7 +74,12 @@ app.get("/", async (_req, res, next) => {
       console.error("Database unreachable:", err.message);
       return renderHome(res, { countries: [], dbOffline: true });
     }
-
+    if (err.code === "28P01") {
+      return renderHome(res, {
+        countries: [],
+        formError:
+          "PostgreSQL login failed. Check PGPASSWORD or DATABASE_URL in .env next to index.js, then restart the server.",
+      });
 
 
 

@@ -32,6 +32,9 @@ function isSaslOrPasswordConfigError(err) {
 }
 
 
+function isMissingRelationError(err) {
+  return err && err.code === "42P01";
+}
 
 
 

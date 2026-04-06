@@ -22,6 +22,14 @@ function isConnectionError(err) {
   );
 }
 
+function isSaslOrPasswordConfigError(err) {
+  const msg = err && err.message;
+  if (typeof msg !== "string") return false;
+  return (
+    msg.includes("SCRAM-SERVER-FIRST-MESSAGE") ||
+    msg.includes("client password must be")
+  );
+}
 
 
 

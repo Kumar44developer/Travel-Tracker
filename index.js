@@ -61,7 +61,9 @@ function renderHome(res, { countries, formError, inputError, dbOffline } = {}) {
   });
 }
 
-
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok", service: "travel-tracker" });
+});
 
 
 

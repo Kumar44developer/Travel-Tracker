@@ -4,3 +4,9 @@
   "description": "Interactive world map to track countries you have visited (PostgreSQL + Express).",
   "main": "index.js",
   "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "solution4": "node solution4.js",
+    "dev": "node --watch index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },

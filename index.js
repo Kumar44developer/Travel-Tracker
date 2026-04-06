@@ -37,6 +37,8 @@ function isMissingRelationError(err) {
 }
 
 
+app.set("view engine", "ejs");
+app.set("views", join(__dirname, "views"));
 
 
 

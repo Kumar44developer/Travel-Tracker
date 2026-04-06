@@ -80,7 +80,13 @@ app.get("/", async (_req, res, next) => {
         formError:
           "PostgreSQL login failed. Check PGPASSWORD or DATABASE_URL in .env next to index.js, then restart the server.",
       });
-
+    }
+    if (err.code === "3D000") {
+      return renderHome(res, {
+        countries: [],
+        formError: `Database does not exist. Create it or set PGDATABASE in .env.`,
+      });
+    }
 
 
 

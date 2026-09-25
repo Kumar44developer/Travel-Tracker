@@ -2,7 +2,8 @@ import express from "express";
 import bodyParser from "body-parser";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
-import { pool } from "./db.mjs";
+import { pool, ensureSchema } from "./db.mjs";
+import { lookupCode } from "./countries.data.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -51,13 +52,17 @@ async function getVisitedCountryCodes() {
 }
 
 
-function renderHome(res, { countries, formError, inputError, dbOffline } = {}) {
+async function resolveCountryCode(name) {
+  return lookupCode(name);
+}
+
+
+function renderHome(res, { countries = [], error = null, dbOffline = false } = {}) {
   res.status(200).render("index", {
     countries,
     total: countries.length,
-    formError: formError ?? null,
-    inputError: !!inputError,
-    dbOffline: !!dbOffline,
+    error,
+    dbOffline,
   });
 }
 
@@ -72,25 +77,139 @@ app.get("/", async (_req, res, next) => {
   } catch (err) {
     if (isConnectionError(err)) {
       console.error("Database unreachable:", err.message);
-      return renderHome(res, { countries: [], dbOffline: true });
-    }
-    if (err.code === "28P01") {
       return renderHome(res, {
         countries: [],
-        formError:
+        dbOffline: true,
+        error: "Database offline. Start PostgreSQL and restart the server.",
+      });
+    }
+    if (err.code === "28P01" || isSaslOrPasswordConfigError(err)) {
+      return renderHome(res, {
+        countries: [],
+        error:
           "PostgreSQL login failed. Check PGPASSWORD or DATABASE_URL in .env next to index.js, then restart the server.",
       });
     }
     if (err.code === "3D000") {
       return renderHome(res, {
         countries: [],
-        formError: `Database does not exist. Create it or set PGDATABASE in .env.`,
+        error: `Database does not exist. Create it or set PGDATABASE in .env.`,
+      });
+    }
+    if (isMissingRelationError(err)) {
+      try {
+        await ensureSchema();
+        return renderHome(res, { countries: [] });
+      } catch (schemaErr) {
+        return next(schemaErr);
+      }
+    }
+    return next(err);
+  }
+});
+
+app.post("/add", async (req, res, next) => {
+  const name = (req.body.country || "").trim();
+
+  let existing = [];
+  try {
+    existing = await getVisitedCountryCodes();
+  } catch (err) {
+    if (isConnectionError(err)) {
+      return renderHome(res, {
+        countries: [],
+        dbOffline: true,
+        error: "Database offline. Start PostgreSQL and restart the server.",
+      });
+    }
+    if (err.code === "28P01" || isSaslOrPasswordConfigError(err)) {
+      return renderHome(res, {
+        countries: [],
+        error:
+          "PostgreSQL login failed. Check PGPASSWORD or DATABASE_URL in .env next to index.js, then restart the server.",
+      });
+    }
+    if (err.code === "3D000") {
+      return renderHome(res, {
+        countries: [],
+        error: `Database does not exist. Create it or set PGDATABASE in .env.`,
+      });
+    }
+    if (isMissingRelationError(err)) {
+      try {
+        await ensureSchema();
+      } catch (schemaErr) {
+        return next(schemaErr);
+      }
+    } else {
+      return next(err);
+    }
+  }
+
+  if (!name) {
+    return renderHome(res, {
+      countries: existing,
+      error: "Please enter a country name.",
+    });
+  }
+
+  try {
+    const code = await resolveCountryCode(name);
+
+    if (!code) {
+      return renderHome(res, {
+        countries: existing,
+        error: `"${name}" is not a recognized country.`,
       });
     }
 
+    if (existing.includes(code)) {
+      return renderHome(res, {
+        countries: existing,
+        error: `You have already added country with code ${code}.`,
+      });
+    }
+
+    await pool.query(
+      "INSERT INTO visited_countries (country_code) VALUES ($1)",
+      [code]
+    );
+
+    return res.redirect("/");
+  } catch (err) {
+    if (isConnectionError(err)) {
+      return renderHome(res, {
+        countries: existing,
+        dbOffline: true,
+        error: "Database offline. Start PostgreSQL and restart the server.",
+      });
+    }
+    return next(err);
+  }
+});
 
 
+app.use((_req, res) => {
+  res.status(404).render("error", { message: "Route not found." });
+});
 
+app.use((err, _req, res, _next) => {
+  console.error("Unhandled error:", err.message);
+  res.status(500).render("error", {
+    message: err.message || "Something went wrong.",
+  });
+});
 
+ensureSchema().catch((err) => {
+  if (isConnectionError(err)) {
+    console.error(
+      "Database unreachable at startup. The map will run in offline mode until PostgreSQL is available."
+    );
+  } else {
+    console.error("Schema check failed:", err.message);
+  }
+});
 
-
+app.listen(port, () => {
+  console.log(`Travel Tracker listening on http://localhost:${port}`);
+});
